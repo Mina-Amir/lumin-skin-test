@@ -1,13 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import "./index.css";
+import "./index.sass";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+import graphqlOptions from "./graphql/cache-options";
 
 const client = new ApolloClient({
 	uri: "https://pangaea-interviews.now.sh/api/graphql",
-	cache: new InMemoryCache(),
+	cache: new InMemoryCache(graphqlOptions),
 });
 
 ReactDOM.render(
