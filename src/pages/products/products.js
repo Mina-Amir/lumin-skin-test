@@ -6,6 +6,7 @@ import { GET_CURRENT_CURRENCY } from "../../graphql/currencies";
 import { cart, GET_CART } from "../../graphql/cart";
 import { menuIsOpen } from "../../graphql/side-menu-openner";
 import styles from "./assets/products.module.sass";
+import { ReactComponent as Loader } from "../../assets/imgs/loading.svg";
 
 function Products() {
 	const { data: cartQuery } = useQuery(GET_CART);
@@ -14,7 +15,7 @@ function Products() {
 		data: { selectedCurrency },
 	} = useQuery(GET_CURRENT_CURRENCY);
 
-	const { data = { products: [] } } = useQuery(GET_PRODUCTS, {
+	const { loading: productLoading, data = { products: [] } } = useQuery(GET_PRODUCTS, {
 		variables: { currency: selectedCurrency },
 		skip: selectedCurrency ? false : true,
 	});
@@ -40,12 +41,13 @@ function Products() {
 	}, [cartQuery]);
 
 	return (
-		<div className={styles.container}>
+		<div className={`${styles.container} ${productLoading ? styles.containerLoading : ""}`}>
+			{productLoading && <Loader />}
 			<Container>
-				<Grid container>
+				<Grid container spacing={4}>
 					{data.products.map((product) => {
 						return (
-							<Grid item xs={12} md={4} key={product.id} className={styles.productContainer}>
+							<Grid item xs={6} sm={4} key={product.id} className={styles.productContainer}>
 								<img src={product.image_url} alt="product" />
 								<h2>
 									{product.product_options.prefix}

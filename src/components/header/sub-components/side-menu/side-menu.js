@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { GET_CURRENT_CURRENCY, selectedCurrency } from "../../../../graphql/currencies";
 import { useQuery } from "@apollo/client";
 import styles from "./assets/side-menu.module.sass";
 import { ClickAwayListener } from "@material-ui/core";
 import { ReactComponent as ArrowRightIcon } from "../../../../assets/imgs/arrow-right-icon.svg";
 import { cart, GET_CART } from "../../../../graphql/cart";
+import { GET_PRODUCTS } from "../../../../graphql/products";
 
 function SideMenu({ closeMenu, menuOpen, setMenuOpen, currenciesData }) {
 	const {
@@ -13,8 +14,12 @@ function SideMenu({ closeMenu, menuOpen, setMenuOpen, currenciesData }) {
 
 	const { data: cartQuery } = useQuery(GET_CART);
 
+	const { data: productsQuery = { products: [] } } = useQuery(GET_PRODUCTS, {
+		variables: { currency: currentCurrency },
+		skip: currentCurrency ? false : true,
+	});
+
 	function updateCurrency(e) {
-		console.log(e.currentTarget.value);
 		selectedCurrency(e.currentTarget.value);
 	}
 
@@ -42,6 +47,28 @@ function SideMenu({ closeMenu, menuOpen, setMenuOpen, currenciesData }) {
 		}
 	}
 
+	function removeCartItem(id) {
+		let newCart = [...cartQuery.cart];
+		let cartItemIndex = newCart.findIndex((cartItem) => cartItem.product.id === id);
+		if (cartItemIndex !== -1) {
+			newCart.splice(cartItemIndex, 1);
+			cart(newCart);
+		}
+	}
+
+	useEffect(() => {
+		if (cartQuery.cart.length > 0 && productsQuery.products.length > 0) {
+			let newCart = cartQuery.cart.map((cartItem) => {
+				let product = productsQuery.products.find((product) => product.id === cartItem.product.id);
+				if (product) {
+					return { ...cartItem, product };
+				}
+				return cartItem;
+			});
+			cart(newCart);
+		}
+	}, [currentCurrency, cartQuery, productsQuery]);
+
 	return (
 		<ClickAwayListener
 			onClickAway={closeMenu}
@@ -66,6 +93,9 @@ function SideMenu({ closeMenu, menuOpen, setMenuOpen, currenciesData }) {
 					{cartQuery.cart.map((cartItem) => {
 						return (
 							<div key={cartItem.product.id} className={styles.cartItemContainer}>
+								<button type="button" onClick={() => removeCartItem(cartItem.product.id)}>
+									X
+								</button>
 								<div>
 									<h3>{cartItem.product.title}</h3>
 									<div className={styles.cartItemPriceQuantity}>
@@ -84,7 +114,19 @@ function SideMenu({ closeMenu, menuOpen, setMenuOpen, currenciesData }) {
 						);
 					})}
 				</div>
-				{cartQuery.cart.length === 0 && <p>There is no items in cart</p>}
+				{cartQuery.cart.length === 0 ? (
+					<p>There is no items in cart</p>
+				) : (
+					<div className={styles.subTotalContainer}>
+						<p>SubTotal</p>
+						<p>
+							{cartQuery.cart.reduce((acc, cartItem) => {
+								return (acc = acc + cartItem.product.price * cartItem.quantity);
+							}, 0)}{" "}
+							{currentCurrency}
+						</p>
+					</div>
+				)}
 			</div>
 		</ClickAwayListener>
 	);
